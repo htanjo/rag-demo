@@ -92,18 +92,21 @@ function cosine(a: number[], b: number[]) {
 }
 
 async function createChunks() {
+  const allParts: ReturnType<typeof split> = [];
+
   for (const doc of docs) {
     const parts = split(doc);
-
-    for (const part of parts) {
-      const embedding = await embed(part.content);
-
-      chunks.push({
-        ...part,
-        embedding,
-      });
-    }
+    allParts.push(...parts);
   }
+
+  const embeddings = await Promise.all(allParts.map((p) => embed(p.content)));
+
+  embeddings.forEach((embedding, i) => {
+    chunks.push({
+      ...allParts[i],
+      embedding,
+    });
+  });
 }
 
 async function search(query: string) {

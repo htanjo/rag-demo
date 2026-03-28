@@ -134,6 +134,13 @@ function dedupeSources(docs: Chunk[]) {
 async function answer(query: string) {
   const docs = await search(query);
 
+  if (docs.length === 0) {
+    return {
+      answer: "該当情報が見つかりませんでした。",
+      sources: [],
+    };
+  }
+
   const context = docs.map((d) => d.content).join("\n\n");
 
   const res = await ai.models.generateContent({

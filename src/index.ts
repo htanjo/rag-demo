@@ -1,9 +1,15 @@
 import { GoogleGenAI } from "@google/genai";
+import { MarkdownTextSplitter } from "@langchain/textsplitters";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const splitter = new MarkdownTextSplitter({
+  chunkSize: 50,
+  chunkOverlap: 10,
+});
 
 type Doc = {
   title: string;
@@ -47,17 +53,28 @@ const docs = [
 
 const chunks: Chunk[] = [];
 
-function split(doc: Doc) {
-  return doc.content
-    .split("\n")
-    .filter((s) => s.trim() !== "")
-    .map((section) => ({
-      content: section,
-      metadata: {
-        title: doc.title,
-        url: doc.url,
-      },
-    }));
+// function split(doc: Doc) {
+//   return doc.content
+//     .split("\n")
+//     .filter((s) => s.trim() !== "")
+//     .map((section) => ({
+//       content: section,
+//       metadata: {
+//         title: doc.title,
+//         url: doc.url,
+//       },
+//     }));
+// }
+
+async function split(doc: Doc) {
+  const sections = await splitter.splitText(doc.content);
+  return sections.map((section) => ({
+    content: section,
+    metadata: {
+      title: doc.title,
+      url: doc.url,
+    },
+  }));
 }
 
 async function embed(text: string) {
@@ -92,10 +109,10 @@ function cosine(a: number[], b: number[]) {
 }
 
 async function createChunks() {
-  const allParts: ReturnType<typeof split> = [];
+  const allParts: Awaited<ReturnType<typeof split>> = [];
 
   for (const doc of docs) {
-    const parts = split(doc);
+    const parts = await split(doc);
     allParts.push(...parts);
   }
 

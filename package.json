@@ -6,6 +6,10 @@
     "build": "rimraf dist && tsc",
     "start": "node dist/index.js"
   },
+  "dependencies": {
+    "@google/genai": "^1.46.0",
+    "dotenv": "^17.3.1"
+  },
   "devDependencies": {
     "@types/node": "^25.5.0",
     "rimraf": "^6.1.3",

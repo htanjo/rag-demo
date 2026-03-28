@@ -118,6 +118,16 @@ async function search(query: string) {
     .slice(0, 3);
 }
 
+function dedupeSources(docs: Chunk[]) {
+  const map = new Map();
+
+  for (const d of docs) {
+    map.set(d.metadata.url, d.metadata);
+  }
+
+  return Array.from(map.values());
+}
+
 async function answer(query: string) {
   const docs = await search(query);
 
@@ -136,7 +146,7 @@ ${context}
 
   return {
     answer: res.text,
-    sources: docs.map((d) => d.metadata),
+    sources: dedupeSources(docs),
   };
 }
 

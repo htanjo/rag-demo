@@ -166,6 +166,8 @@ async function createChunks() {
 
 async function search(query: string) {
   const qVec = await embed(query);
+  const threshold = 0.6; // 類似度の閾値
+  const topK = 3; // 上位K件を取得
 
   return chunks
     .map((c) => ({
@@ -173,7 +175,8 @@ async function search(query: string) {
       score: cosine(qVec, c.embedding),
     }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+    .filter((c) => c.score >= threshold)
+    .slice(0, topK);
 }
 
 function dedupeSources(docs: Chunk[]) {

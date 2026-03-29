@@ -243,17 +243,27 @@ async function answer(query: string) {
     };
   }
 
-  const context = docs.map((d) => d.content).join("\n\n");
+  const context = docs.map((d) => ({ text: d.content, metadata: d.metadata }));
 
   const res = await ai.models.generateContent({
     model: "gemini-2.5-flash-lite",
-    contents: `
-以下の情報を元に回答してください:
-
-${context}
-
-質問: ${query}
-`,
+    config: {
+      systemInstruction:
+        "あなたは優秀なカスタマーサポート担当者です。ユーザーからの質問に対して、参照コンテクストをもとに正確かつ簡潔に回答してください。必要に応じて、参照元のタイトルとURLを明記してください。",
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `質問:\n${query}`,
+          },
+          {
+            text: `参照コンテクスト（JSON）:\n${JSON.stringify(context)}`,
+          },
+        ],
+      },
+    ],
   });
 
   return {

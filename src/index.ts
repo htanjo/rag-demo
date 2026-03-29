@@ -95,19 +95,6 @@ const docs = [
 
 const chunks: Chunk[] = [];
 
-// function split(doc: Doc) {
-//   return doc.content
-//     .split("\n")
-//     .filter((s) => s.trim() !== "")
-//     .map((section) => ({
-//       content: section,
-//       metadata: {
-//         title: doc.title,
-//         url: doc.url,
-//       },
-//     }));
-// }
-
 async function split(doc: Doc) {
   const sections = await splitter.splitText(doc.content);
   return sections.map((section) => ({

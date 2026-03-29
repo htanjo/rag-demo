@@ -26,6 +26,10 @@ type Chunk = {
   embedding: number[];
 };
 
+type SearchResult = Chunk & {
+  score: number;
+};
+
 const docs = [
   {
     title: "配送方法と配送料について",
@@ -164,19 +168,59 @@ async function createChunks() {
   });
 }
 
+function mmr(results: SearchResult[], lambda = 0.7, topK = 3) {
+  const selected = [];
+
+  while (selected.length < topK && results.length > 0) {
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (const candidate of results) {
+      const relevance = candidate.score;
+
+      const diversity =
+        selected.length === 0
+          ? 0
+          : Math.max(
+              ...selected.map((s) => {
+                if (!s) {
+                  return 0;
+                }
+                return cosine(candidate.embedding, s.embedding);
+              }),
+            );
+
+      const mmrScore = lambda * relevance - (1 - lambda) * diversity;
+
+      if (mmrScore > bestScore) {
+        bestScore = mmrScore;
+        best = candidate;
+      }
+    }
+
+    if (best) {
+      selected.push(best);
+      results = results.filter((r) => r !== best);
+    }
+  }
+
+  return selected;
+}
+
 async function search(query: string) {
   const qVec = await embed(query);
   const threshold = 0.6; // 類似度の閾値
+  const lambda = 0.7; // MMRのλパラメータ
   const topK = 3; // 上位K件を取得
 
-  return chunks
-    .map((c) => ({
-      ...c,
-      score: cosine(qVec, c.embedding),
+  const scored = chunks
+    .map((chunk) => ({
+      ...chunk,
+      score: cosine(qVec, chunk.embedding),
     }))
-    .sort((a, b) => b.score - a.score)
-    .filter((c) => c.score >= threshold)
-    .slice(0, topK);
+    .filter((c) => c.score >= threshold);
+
+  return mmr(scored, lambda, topK);
 }
 
 function dedupeSources(docs: Chunk[]) {
